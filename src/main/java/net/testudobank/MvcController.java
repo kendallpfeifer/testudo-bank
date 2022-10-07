@@ -826,13 +826,11 @@ public class MvcController {
     String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date()); // use same timestamp for all logs created
                                                                               // by this interest application
     int numDeposits = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
-    System.out.println("Number of deposits: " + numDeposits);
     if (numDeposits > 0 && numDeposits % 5 == 0) {
       int currentBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID);
       int amountAfterInterest = (int) (currentBalanceInPennies * BALANCE_INTEREST_RATE);
       TestudoBankRepository.increaseCustomerCashBalance(jdbcTemplate, userID, amountAfterInterest);
-      TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime,
-          TRANSACTION_HISTORY_APPLYINTEREST_ACTION, amountAfterInterest);
+      TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_APPLYINTEREST_ACTION, amountAfterInterest);
       TestudoBankRepository.setCustomerCashBalance(jdbcTemplate, userID, amountAfterInterest);
       TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, 0);
       return "account_info";
