@@ -76,7 +76,7 @@ public class TestudoBankRepository {
 
   public static int getCustomerNumberOfDepositsForInterest(JdbcTemplate jdbcTemplate, String customerID) { 
     
-    String getCustomerInterestDepositsSql = String.format("Select NumDepositsForInterest from Customers WHERE CustomerID='%s;", customerID);
+    String getCustomerInterestDepositsSql = String.format("Select NumDepositsForInterest from Customers WHERE CustomerID='%s';", customerID);
     int customerDepositsForInterest = jdbcTemplate.queryForObject(getCustomerInterestDepositsSql, Integer.class);
     return customerDepositsForInterest;
 
@@ -94,6 +94,16 @@ public class TestudoBankRepository {
                                                               action,
                                                               amtInPennies);
     jdbcTemplate.update(insertRowToTransactionHistorySql);
+  }
+
+  public static void insertRowToInterestHistoryTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, String action, int amtInPennies, double interestRate) {
+    String insertRowToInterestHistorySql = String.format("INSERT INTO InterestHistory VALUES ('%s', '%s', '%s', %d, %3f);",
+                                                              customerID,
+                                                              timestamp,
+                                                              action,
+                                                              amtInPennies,
+                                                              interestRate);
+    jdbcTemplate.update(insertRowToInterestHistorySql);
   }
 
   public static void insertRowToOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, int depositAmtIntPennies, int oldOverdraftBalanceInPennies, int newOverdraftBalanceInPennies) {
