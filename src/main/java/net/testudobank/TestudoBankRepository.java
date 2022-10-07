@@ -74,12 +74,10 @@ public class TestudoBankRepository {
     return jdbcTemplate.queryForList(getTransferHistorySql, customerID);
   }
 
-  public static int getCustomerNumberOfDepositsForInterest(JdbcTemplate jdbcTemplate, String customerID) { 
-    
-    String getCustomerInterestDepositsSql = String.format("Select NumDepositsForInterest from Customers WHERE CustomerID='%s';", customerID);
-    int customerDepositsForInterest = jdbcTemplate.queryForObject(getCustomerInterestDepositsSql, Integer.class);
-    return customerDepositsForInterest;
-
+  public static int getCustomerNumberOfDepositsForInterest(JdbcTemplate jdbcTemplate, String customerID) {
+    String getCustomerNumberOfDepositsForInterestSql = String.format("SELECT NumDepositsForInterest FROM Customers WHERE CustomerID='%s';", customerID);
+    int numberOfDepositsForInterest = jdbcTemplate.queryForObject(getCustomerNumberOfDepositsForInterestSql, Integer.class);
+    return numberOfDepositsForInterest;
   }
 
   public static void setCustomerNumberOfDepositsForInterest(JdbcTemplate jdbcTemplate, String customerID, int numDepositsForInterest) { 
@@ -94,16 +92,6 @@ public class TestudoBankRepository {
                                                               action,
                                                               amtInPennies);
     jdbcTemplate.update(insertRowToTransactionHistorySql);
-  }
-
-  public static void insertRowToInterestHistoryTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, String action, int amtInPennies, double interestRate) {
-    String insertRowToInterestHistorySql = String.format("INSERT INTO InterestHistory VALUES ('%s', '%s', '%s', %d, %3f);",
-                                                              customerID,
-                                                              timestamp,
-                                                              action,
-                                                              amtInPennies,
-                                                              interestRate);
-    jdbcTemplate.update(insertRowToInterestHistorySql);
   }
 
   public static void insertRowToOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, int depositAmtIntPennies, int oldOverdraftBalanceInPennies, int newOverdraftBalanceInPennies) {
