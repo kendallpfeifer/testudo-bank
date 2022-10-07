@@ -28,14 +28,6 @@ CREATE TABLE TransactionHistory (
   Amount int
 );
 
-CREATE TABLE InterestHistory (
-  CustomerID varchar(255),
-  Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit')),
-  Amount int,
-  InterestRate decimal(10,3)
-);
-
 CREATE TABLE TransferHistory (
   TransferFrom varchar(255),
   TransferTo varchar(255),
