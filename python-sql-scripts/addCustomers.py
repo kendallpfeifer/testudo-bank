@@ -68,19 +68,6 @@ CREATE TABLE TransferHistory (
 '''
 cursor.execute(create_transferhistory_table_sql)
 
-# Make empty InterestHistory
-create_interesthistory_table_sql = '''
-CREATE TABLE InterestHistory (
-  CustomerID varchar(255),
-  Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit')),
-  Amount int,
-  InterestRate decimal(10, 3)
-);
-'''
-cursor.execute(create_interesthistory_table_sql)
-
-
 # Make empty CryptoHoldings table
 create_cryptoholdings_table_sql = '''
 CREATE TABLE CryptoHoldings (
