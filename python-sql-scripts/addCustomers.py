@@ -78,7 +78,6 @@ CREATE TABLE CryptoHoldings (
 '''
 cursor.execute(create_cryptoholdings_table_sql)
 
-
 # Make empty CryptoHistory table
 create_cryptohistory_table_sql = '''
 CREATE TABLE CryptoHistory (
