@@ -47,10 +47,12 @@ public class MvcController {
   public static String TRANSACTION_HISTORY_TRANSFER_RECEIVE_ACTION = "TransferReceive";
   public static String TRANSACTION_HISTORY_CRYPTO_SELL_ACTION = "CryptoSell";
   public static String TRANSACTION_HISTORY_CRYPTO_BUY_ACTION = "CryptoBuy";
+  public static String TRANSACTION_HISTORY_APPLYINTEREST_ACTION = "ApplyInterest";
   public static String CRYPTO_HISTORY_SELL_ACTION = "Sell";
   public static String CRYPTO_HISTORY_BUY_ACTION = "Buy";
   public static Set<String> SUPPORTED_CRYPTOCURRENCIES = new HashSet<>(Arrays.asList("ETH", "SOL"));
   private static double BALANCE_INTEREST_RATE = 1.015;
+  private static int MIN_DEPOSIT_AMOUNT_FOR_INTEREST_IN_PENNIES = 2000;
 
   public MvcController(@Autowired JdbcTemplate jdbcTemplate, @Autowired CryptoPriceClient cryptoPriceClient) {
     this.jdbcTemplate = jdbcTemplate;
@@ -343,6 +345,14 @@ public class MvcController {
       }
 
     } else { // simple deposit case
+      int userBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID); // the  current balance before deposit
+      // If there is no overdraft balance, if there is money in the bank, and if the  deposit is >= $20, update the
+      // number of deposits counting towards interest
+      if (userBalanceInPennies > 0 && userDepositAmtInPennies >= MIN_DEPOSIT_AMOUNT_FOR_INTEREST_IN_PENNIES) {
+        int currentNumDepositsForInterest = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
+        TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID,
+        currentNumDepositsForInterest + 1);
+      }
       TestudoBankRepository.increaseCustomerCashBalance(jdbcTemplate, userID, userDepositAmtInPennies);
     }
 
@@ -799,15 +809,34 @@ public class MvcController {
   }
 
   /**
-   * 
-   * 
+   * Method for applying interest to a user's balance if they are eligible.
+   * <p>
+   * A user should have interest applied to their balance for every 5 deposits
+   * they make at a rate of 1.5% If they have an overdraft on their account, or if
+   * they
+   * have no money in their account, the deposit made does not count towards their
+   * total. This will be ensured upon deposit.
+   *
    * @param user
-   * @return "account_info" if interest applied. Otherwise, redirect to "welcome" page.
+   * @return "account_info" if interest applied. Otherwise, redirect to "welcome"
+   *         page.
    */
   public String applyInterest(@ModelAttribute("user") User user) {
-
-    return "welcome";
-
+    String userID = user.getUsername();
+    String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date()); // use same timestamp for all logs created
+                                                                              // by this interest application
+    int numDeposits = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
+    if (numDeposits > 0 && numDeposits % 5 == 0) {
+      int currentBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID);
+      int amountAfterInterest = (int) (currentBalanceInPennies * BALANCE_INTEREST_RATE);
+      TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_APPLYINTEREST_ACTION, amountAfterInterest);
+      TestudoBankRepository.setCustomerCashBalance(jdbcTemplate, userID, amountAfterInterest);
+      TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, 0);
+      return "account_info";
+    } else {
+      return "welcome";
+    }
   }
+
 
 }

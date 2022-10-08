@@ -48,6 +48,9 @@ public class MvcControllerIntegTest {
   private static String CUSTOMER2_FIRST_NAME = "Foo1";
   private static String CUSTOMER2_LAST_NAME = "Bar1";
   
+  private static double BALANCE_INTEREST_RATE = 1.015;
+  private static int CUSTOMER_NUMDEPOSITS_FORINTEREST = 5;
+
   // Spins up small MySQL DB in local Docker container
   @Container
   public static MySQLContainer db = new MySQLContainer<>("mysql:5.7.37")
@@ -602,6 +605,82 @@ public class MvcControllerIntegTest {
     // verify that the Reversal is accurately logged in the TransactionHistory table as a Deposit
     int CUSTOMER1_AMOUNT_TO_DEPOSIT_IN_PENNIES = CUSTOMER1_AMOUNT_TO_WITHDRAW_IN_PENNIES;
     MvcControllerIntegTestHelpers.checkTransactionLog(customer1ReversalTransactionLog, timeWhenReversalRequestSent, CUSTOMER1_ID, MvcController.TRANSACTION_HISTORY_DEPOSIT_ACTION, CUSTOMER1_AMOUNT_TO_DEPOSIT_IN_PENNIES);
+  }
+
+  /**
+   * Verifies that after five deposits, interest is applied to the account
+   * The customer's Balance in the Customers table should be increased by the
+   * interest amount,
+   * and the Deposit should be logged in the InterestHistory table.
+   * <p>
+   * Assumes that the customer's account is in the simplest state
+   * (not in overdraft, account is not frozen due to too many transaction
+   * disputes, etc.)
+   * <p>
+   * Some verifications are not done on the initial Deposit since it is already
+   * checked in detail in testSimpleDeposit().
+   *
+   * @throws SQLException
+   * @throws ScriptException
+   */
+  @Test
+  public void testInterestAppliedAfterMinDeposits() throws SQLException, ScriptException {
+    // initialize customer1 with a balance of $123.45 (to make sure this works for
+    // non-whole dollar amounts). represented as pennies in the DB.
+    double CUSTOMER1_BALANCE = 123.45;
+    int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+    MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, CUSTOMER_NUMDEPOSITS_FORINTEREST);
+
+    // Prepare Deposit Form to Deposit $20.00 to customer 1's account.
+    double CUSTOMER1_AMOUNT_TO_DEPOSIT = 20.00; // user input is in dollar amount, not pennies.
+    int NUM_DEPOSITS = 5;
+    User customer1DepositFormInputs = new User();
+    customer1DepositFormInputs.setUsername(CUSTOMER1_ID);
+    customer1DepositFormInputs.setPassword(CUSTOMER1_PASSWORD);
+    customer1DepositFormInputs.setAmountToDeposit(CUSTOMER1_AMOUNT_TO_DEPOSIT);
+
+    // store timestamp of when Deposit request is sent to verify timestamps in the
+    // TransactionHistory table later
+    LocalDateTime timeWhenDepositRequestSent = MvcControllerIntegTestHelpers
+        .fetchCurrentTimeAsLocalDateTimeNoMilliseconds();
+    System.out.println("Timestamp when Deposit Request is sent: " + timeWhenDepositRequestSent);
+
+    // send request to the Deposit Form's POST handler in MvcController five times
+    for (int i = 0; i < NUM_DEPOSITS; i++) {
+      controller.submitDeposit(customer1DepositFormInputs);
+    }
+    // fetch updated data from the DB
+    List<Map<String, Object>> customersTableData = jdbcTemplate.queryForList("SELECT * FROM Customers;");
+    List<Map<String, Object>> transactionHistoryTableData = jdbcTemplate
+        .queryForList("SELECT * FROM TransactionHistory;");
+    Map<String, Object> customer1Data = customersTableData.get(0);
+
+    // verify that there are 0 deposits left for interest, because after 5 deposits,
+    // the number resets
+    assertEquals(0, customer1Data.get("NumDepositsForInterest"));
+
+    // verify customer balance was increased by $100.00 plus interest
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE = CUSTOMER1_AMOUNT_TO_DEPOSIT * NUM_DEPOSITS;
+    int CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES = (int) ((MvcControllerIntegTestHelpers
+        .convertDollarsToPennies(CUSTOMER1_EXPECTED_FINAL_BALANCE) + CUSTOMER1_BALANCE_IN_PENNIES) * BALANCE_INTEREST_RATE);
+    assertEquals(CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES, (int) customer1Data.get("Balance"));
+
+    // // verify that the Deposit's details are accurately logged in the
+    // TransactionHistory table for the first five deposits
+    int CUSTOMER1_AMOUNT_TO_DEPOSIT_IN_PENNIES = 0;
+    for (int i = 0; i < NUM_DEPOSITS; i++) {
+      Map<String, Object> customer1TransactionLog = transactionHistoryTableData.get(i);
+      CUSTOMER1_AMOUNT_TO_DEPOSIT_IN_PENNIES = MvcControllerIntegTestHelpers
+          .convertDollarsToPennies(CUSTOMER1_AMOUNT_TO_DEPOSIT);
+      MvcControllerIntegTestHelpers.checkTransactionLog(customer1TransactionLog, timeWhenDepositRequestSent,
+          CUSTOMER1_ID, MvcController.TRANSACTION_HISTORY_DEPOSIT_ACTION, CUSTOMER1_AMOUNT_TO_DEPOSIT_IN_PENNIES);
+    }
+
+    // verify that the interest details are accurately logged in the
+    // TransactiontHistory table
+    Map<String, Object> customer1TransactionLog = transactionHistoryTableData.get(NUM_DEPOSITS);
+    MvcControllerIntegTestHelpers.checkTransactionLog(customer1TransactionLog, timeWhenDepositRequestSent, CUSTOMER1_ID,
+        MvcController.TRANSACTION_HISTORY_APPLYINTEREST_ACTION, CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES);
   }
 
   /**
