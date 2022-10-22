@@ -32,6 +32,8 @@ public class MvcControllerIntegTestHelpers {
     return dataSource;
   }
 
+  // this is the buffer upper bound for the interest call, as this call will take longer than a
+  // normal deposit 
   private static int UPPER_BOUND_FOR_INTEREST_CALL = 5;
 
   // Uses given customer details to initialize the customer in the Customers and Passwords table in the MySQL DB.
