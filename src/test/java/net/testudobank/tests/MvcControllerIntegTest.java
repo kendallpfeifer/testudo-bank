@@ -1564,7 +1564,6 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
       }
       user.setWhichCryptoToBuy(transaction.cryptoName);
 
-
       // Mock the price of the cryptocurrency
       Mockito.when(cryptoPriceClient.getCurrentCryptoValue(transaction.cryptoName)).thenReturn(transaction.cryptoPrice);
 
@@ -1578,7 +1577,6 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
         user.setAmountToSellCrypto(transaction.cryptoAmountToTransact);
         returnedPage = controller.sellCrypto(user);
       }
-
       // check the crypto balance
       try {
         double endingCryptoBalance = jdbcTemplate.queryForObject("SELECT CryptoAmount FROM CryptoHoldings WHERE CustomerID=? AND CryptoName=?", BigDecimal.class, CUSTOMER1_ID, transaction.cryptoName).doubleValue();
@@ -1594,7 +1592,7 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
       // check the overdraft balance
       assertEquals(MvcControllerIntegTestHelpers.convertDollarsToPennies(transaction.expectedEndingOverdraftBalanceInDollars),
               jdbcTemplate.queryForObject("SELECT OverdraftBalance FROM Customers WHERE CustomerID=?", Integer.class, CUSTOMER1_ID));
-
+      
       if (!transaction.shouldSucceed) {
         // verify no transaction took place
         assertEquals("welcome", returnedPage);
@@ -1900,4 +1898,98 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
     cryptoTransactionTester.test(cryptoTransaction);
   }
 
+    /**
+   * Test buying of ETH with no previous crypto buys, then test buying SOL, then selling some of the SOL
+   */
+  @Test
+  public void testCryptoBuyETHAndSOLAndSellSOL() throws ScriptException {
+    CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .initialCryptoBalance(Collections.singletonMap("ETH", 0.0))
+            .initialCryptoBalance(Collections.singletonMap("SOL", 0.0))
+            .build();
+
+    cryptoTransactionTester.initialize();
+
+    CryptoTransaction cryptoTransactionEOL = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(900)
+            .expectedEndingCryptoBalance(0.1)
+            .cryptoPrice(1000)
+            .cryptoAmountToTransact(0.1)
+            .cryptoName("ETH")
+            .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+            .shouldSucceed(true)
+            .build();
+    cryptoTransactionTester.test(cryptoTransactionEOL);
+
+    CryptoTransaction cryptoTransactionBuySOL = CryptoTransaction.builder()
+      .expectedEndingBalanceInDollars(800)
+      .expectedEndingCryptoBalance(0.1)
+      .cryptoPrice(1000)
+      .cryptoAmountToTransact(0.1)
+      .cryptoName("SOL")
+      .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+      .shouldSucceed(true)
+      .build();
+    cryptoTransactionTester.test(cryptoTransactionBuySOL);
+
+    CryptoTransaction cryptoTransactionSellSOL = CryptoTransaction.builder()
+      .expectedEndingBalanceInDollars(900)
+      .expectedEndingCryptoBalance(0.0)
+      .cryptoPrice(1000)
+      .cryptoAmountToTransact(0.1)
+      .cryptoName("SOL")
+      .cryptoTransactionTestType(CryptoTransactionTestType.SELL)
+      .shouldSucceed(true)
+      .build();
+    cryptoTransactionTester.test(cryptoTransactionSellSOL);  
+  }
+
+  /**
+   * Test that the "welcome" page is returned when a user tries to buy BitCoin,
+   * which is not currently supported with Testudo Bank
+   */
+  @Test
+  public void testCryptoBuyInvalidCryptoTypeBuying() throws ScriptException {
+    CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .build();
+
+    cryptoTransactionTester.initialize();
+
+    CryptoTransaction cryptoTransactionBuyBTC = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(1000)
+            .expectedEndingCryptoBalance(0)
+            .cryptoPrice(-1)
+            .cryptoAmountToTransact(0.1)
+            .cryptoName("BTC")
+            .cryptoTransactionTestType(CryptoTransactionTestType.BUY)
+            .shouldSucceed(false)
+            .build();
+    cryptoTransactionTester.test(cryptoTransactionBuyBTC);
+  }
+
+  /**
+   * Test that the "welcome" page is returned when a user tries to sell BitCoin, 
+   * which is not currently supported with Testudo Bank
+   */
+  @Test
+  public void testCryptoBuyInvalidCryptoTypeSelling() throws ScriptException {
+    CryptoTransactionTester cryptoTransactionTester = CryptoTransactionTester.builder()
+            .initialBalanceInDollars(1000)
+            .build();
+
+    cryptoTransactionTester.initialize();
+
+    CryptoTransaction cryptoTransactionSellBTC = CryptoTransaction.builder()
+            .expectedEndingBalanceInDollars(1000)
+            .expectedEndingCryptoBalance(0)
+            .cryptoPrice(-1)
+            .cryptoAmountToTransact(0.1)
+            .cryptoName("BTC")
+            .cryptoTransactionTestType(CryptoTransactionTestType.SELL)
+            .shouldSucceed(false)
+            .build();
+    cryptoTransactionTester.test(cryptoTransactionSellBTC);
+  }
 }
