@@ -2,8 +2,10 @@ CREATE TABLE Customers (
   CustomerID varchar(255),
   FirstName varchar(255),
   LastName varchar(255),
-  Balance int,
-  OverdraftBalance int,
+  CheckingBalance int,
+  SavingsBalance int,
+  CheckingOverdraftBalance int,
+  SavingsOverdraftBalance int,
   NumFraudReversals int,
   NumDepositsForInterest int
 );
@@ -13,7 +15,7 @@ CREATE TABLE Passwords (
   Password varchar(255)
 );
 
-CREATE TABLE OverdraftLogs (
+CREATE TABLE CheckingOverdraftLogs (
   CustomerID varchar(255),
   Timestamp DATETIME,
   DepositAmt int,
@@ -21,10 +23,25 @@ CREATE TABLE OverdraftLogs (
   NewOverBalance int
 );
 
-CREATE TABLE TransactionHistory (
+CREATE TABLE SavingsOverdraftLogs (
   CustomerID varchar(255),
   Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'TransferSend', 'TransferRecieve', 'CryptoBuy', 'CryptoSell')),
+  DepositAmt int,
+  OldOverBalance int,
+  NewOverBalance int
+);
+
+CREATE TABLE CheckingTransactionHistory (
+  CustomerID varchar(255),
+  Timestamp DATETIME,
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'CheckingTransferSend', 'CheckingTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
+  Amount int
+);
+
+CREATE TABLE SavingsTransactionHistory (
+  CustomerID varchar(255),
+  Timestamp DATETIME,
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'SavingsTransferSend', 'SavingsTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
   Amount int
 );
 

@@ -21,10 +21,16 @@ public class TestudoBankRepository {
     return numOfReversals;
   }
 
-  public static int getCustomerCashBalanceInPennies(JdbcTemplate jdbcTemplate, String customerID) {
-    String getUserBalanceSql =  String.format("SELECT Balance FROM Customers WHERE CustomerID='%s';", customerID);
-    int userBalanceInPennies = jdbcTemplate.queryForObject(getUserBalanceSql, Integer.class);
-    return userBalanceInPennies;
+  public static int getCustomerCashBalanceInPennies(JdbcTemplate jdbcTemplate, String customerID, String accountType) {
+    if (accountType.equals("checking")) {
+      String getUserBalanceSql =  String.format("SELECT CheckingBalance FROM Customers WHERE CustomerID='%s';", customerID);
+      int userBalanceInPennies = jdbcTemplate.queryForObject(getUserBalanceSql, Integer.class);
+      return userBalanceInPennies;
+    } else {
+      String getUserBalanceSql =  String.format("SELECT SavingsBalance FROM Customers WHERE CustomerID='%s';", customerID);
+      int userBalanceInPennies = jdbcTemplate.queryForObject(getUserBalanceSql, Integer.class);
+      return userBalanceInPennies;
+    }
   }
 
   public static Optional<Double> getCustomerCryptoBalance(JdbcTemplate jdbcTemplate, String customerID, String cryptoName) {
@@ -39,14 +45,26 @@ public class TestudoBankRepository {
 
   }
 
-  public static int getCustomerOverdraftBalanceInPennies(JdbcTemplate jdbcTemplate, String customerID) {
-    String getUserOverdraftBalanceSql = String.format("SELECT OverdraftBalance FROM Customers WHERE CustomerID='%s';", customerID);
-    int userOverdraftBalanceInPennies = jdbcTemplate.queryForObject(getUserOverdraftBalanceSql, Integer.class);
-    return userOverdraftBalanceInPennies;
+  public static int getCustomerCheckingOverdraftBalanceInPennies(JdbcTemplate jdbcTemplate, String customerID) {
+      String getUserOverdraftBalanceSql = String.format("SELECT CheckingOverdraftBalance FROM Customers WHERE CustomerID='%s';", customerID);
+      int userOverdraftBalanceInPennies = jdbcTemplate.queryForObject(getUserOverdraftBalanceSql, Integer.class);
+      return userOverdraftBalanceInPennies;
   }
 
-  public static List<Map<String,Object>> getRecentTransactions(JdbcTemplate jdbcTemplate, String customerID, int numTransactionsToFetch) {
-    String getTransactionHistorySql = String.format("Select * from TransactionHistory WHERE CustomerId='%s' ORDER BY Timestamp DESC LIMIT %d;", customerID, numTransactionsToFetch);
+  public static int getCustomerSavingsOverdraftBalanceInPennies(JdbcTemplate jdbcTemplate, String customerID) {
+      String getUserOverdraftBalanceSql = String.format("SELECT SavingsOverdraftBalance FROM Customers WHERE CustomerID='%s';", customerID);
+      int userOverdraftBalanceInPennies = jdbcTemplate.queryForObject(getUserOverdraftBalanceSql, Integer.class);
+      return userOverdraftBalanceInPennies;
+  }
+
+  public static List<Map<String,Object>> getRecentCheckingTransactions(JdbcTemplate jdbcTemplate, String customerID, int numTransactionsToFetch) {
+      String getTransactionHistorySql = String.format("Select * from CheckingTransactionHistory WHERE CustomerId='%s' ORDER BY Timestamp DESC LIMIT %d;", customerID, numTransactionsToFetch);
+      List<Map<String,Object>> transactionLogs = jdbcTemplate.queryForList(getTransactionHistorySql);
+      return transactionLogs;
+  }
+
+  public static List<Map<String,Object>> getRecentSavingsTransactions(JdbcTemplate jdbcTemplate, String customerID, int numTransactionsToFetch) {
+    String getTransactionHistorySql = String.format("Select * from SavingsTransactionHistory WHERE CustomerId='%s' ORDER BY Timestamp DESC LIMIT %d;", customerID, numTransactionsToFetch);
     List<Map<String,Object>> transactionLogs = jdbcTemplate.queryForList(getTransactionHistorySql);
     return transactionLogs;
   }
@@ -57,14 +75,26 @@ public class TestudoBankRepository {
     return transferLogs;
   }
 
-  public static List<Map<String,Object>> getOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID){
-    String getOverDraftLogsSql = String.format("SELECT * FROM OverdraftLogs WHERE CustomerID='%s';", customerID);
+  public static List<Map<String,Object>> getCheckingOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID){
+    String getOverDraftLogsSql = String.format("SELECT * FROM CheckingOverdraftLogs WHERE CustomerID='%s';", customerID);
     List<Map<String,Object>> overdraftLogs = jdbcTemplate.queryForList(getOverDraftLogsSql);
     return overdraftLogs;
   }
 
-  public static List<Map<String,Object>> getOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID, String timestamp){
-    String getOverDraftLogsSql = String.format("SELECT * FROM OverdraftLogs WHERE CustomerID='%s' AND Timestamp='%s';", customerID, timestamp);
+  public static List<Map<String,Object>> getSavingsOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID){
+    String getOverDraftLogsSql = String.format("SELECT * FROM SavingsOverdraftLogs WHERE CustomerID='%s';", customerID);
+    List<Map<String,Object>> overdraftLogs = jdbcTemplate.queryForList(getOverDraftLogsSql);
+    return overdraftLogs;
+  }
+
+  public static List<Map<String,Object>> getCheckingOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID, String timestamp){
+    String getOverDraftLogsSql = String.format("SELECT * FROM CheckingOverdraftLogs WHERE CustomerID='%s' AND Timestamp='%s';", customerID, timestamp);
+    List<Map<String,Object>> overdraftLogs = jdbcTemplate.queryForList(getOverDraftLogsSql);
+    return overdraftLogs;
+  }
+
+  public static List<Map<String,Object>> getSavingsOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID, String timestamp){
+    String getOverDraftLogsSql = String.format("SELECT * FROM SavingsOverdraftLogs WHERE CustomerID='%s' AND Timestamp='%s';", customerID, timestamp);
     List<Map<String,Object>> overdraftLogs = jdbcTemplate.queryForList(getOverDraftLogsSql);
     return overdraftLogs;
   }
@@ -85,17 +115,36 @@ public class TestudoBankRepository {
     jdbcTemplate.update(customerInterestDepositsSql);
   }
 
-  public static void insertRowToTransactionHistoryTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, String action, int amtInPennies) {
-    String insertRowToTransactionHistorySql = String.format("INSERT INTO TransactionHistory VALUES ('%s', '%s', '%s', %d);",
-                                                              customerID,
-                                                              timestamp,
-                                                              action,
-                                                              amtInPennies);
-    jdbcTemplate.update(insertRowToTransactionHistorySql);
+  public static void insertRowToCheckingTransactionHistoryTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, String action, int amtInPennies) {
+    String insertRowToCheckingTransactionHistorySql = String.format("INSERT INTO CheckingTransactionHistory VALUES ('%s', '%s', '%s', %d);",
+      customerID,
+      timestamp,
+      action,
+      amtInPennies);
+    jdbcTemplate.update(insertRowToCheckingTransactionHistorySql);
   }
 
-  public static void insertRowToOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, int depositAmtIntPennies, int oldOverdraftBalanceInPennies, int newOverdraftBalanceInPennies) {
-    String insertRowToOverdraftLogsSql = String.format("INSERT INTO OverdraftLogs VALUES ('%s', '%s', %d, %d, %d);", 
+  public static void insertRowToSavingsTransactionHistoryTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, String action, int amtInPennies) {
+    String insertRowToSavingsTransactionHistorySql = String.format("INSERT INTO SavingsTransactionHistory VALUES ('%s', '%s', '%s', %d);",
+      customerID,
+      timestamp,
+      action,
+      amtInPennies);
+    jdbcTemplate.update(insertRowToSavingsTransactionHistorySql);
+  }
+
+  public static void insertRowToCheckingOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, int depositAmtIntPennies, int oldOverdraftBalanceInPennies, int newOverdraftBalanceInPennies) {
+    String insertRowToOverdraftLogsSql = String.format("INSERT INTO CheckingOverdraftLogs VALUES ('%s', '%s', %d, %d, %d);", 
+                                                        customerID,
+                                                        timestamp,
+                                                        depositAmtIntPennies,
+                                                        oldOverdraftBalanceInPennies,
+                                                        newOverdraftBalanceInPennies);
+    jdbcTemplate.update(insertRowToOverdraftLogsSql);
+  }
+
+  public static void insertRowToSavingsOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp, int depositAmtIntPennies, int oldOverdraftBalanceInPennies, int newOverdraftBalanceInPennies) {
+    String insertRowToOverdraftLogsSql = String.format("INSERT INTO SavingsOverdraftLogs VALUES ('%s', '%s', %d, %d, %d);", 
                                                         customerID,
                                                         timestamp,
                                                         depositAmtIntPennies,
@@ -109,8 +158,13 @@ public class TestudoBankRepository {
     jdbcTemplate.update(numOfReversalsUpdateSql);
   }
 
-  public static void setCustomerOverdraftBalance(JdbcTemplate jdbcTemplate, String customerID, int newOverdraftBalanceInPennies) {
-    String overdraftBalanceUpdateSql = String.format("UPDATE Customers SET OverdraftBalance = %d WHERE CustomerID='%s';", newOverdraftBalanceInPennies, customerID);
+  public static void setCustomerCheckingOverdraftBalance(JdbcTemplate jdbcTemplate, String customerID, int newOverdraftBalanceInPennies) {
+    String overdraftBalanceUpdateSql = String.format("UPDATE Customers SET CheckingOverdraftBalance = %d WHERE CustomerID='%s';", newOverdraftBalanceInPennies, customerID);
+    jdbcTemplate.update(overdraftBalanceUpdateSql);
+  }
+
+  public static void setCustomerSavingsOverdraftBalance(JdbcTemplate jdbcTemplate, String customerID, int newOverdraftBalanceInPennies) {
+    String overdraftBalanceUpdateSql = String.format("UPDATE Customers SET SavingsOverdraftBalance = %d WHERE CustomerID='%s';", newOverdraftBalanceInPennies, customerID);
     jdbcTemplate.update(overdraftBalanceUpdateSql);
   }
 
@@ -119,14 +173,24 @@ public class TestudoBankRepository {
     jdbcTemplate.update(overdraftBalanceIncreaseSql);
   }
 
-  public static void setCustomerCashBalance(JdbcTemplate jdbcTemplate, String customerID, int newBalanceInPennies) {
-    String updateBalanceSql = String.format("UPDATE Customers SET Balance = %d WHERE CustomerID='%s';", newBalanceInPennies, customerID);
-    jdbcTemplate.update(updateBalanceSql);
+  public static void setCustomerCashBalance(JdbcTemplate jdbcTemplate, String customerID, int newBalanceInPennies, String accountType) {
+    if (accountType.equals("checking")) {
+      String updateBalanceSql = String.format("UPDATE Customers SET CheckingBalance = %d WHERE CustomerID='%s';", newBalanceInPennies, customerID);
+      jdbcTemplate.update(updateBalanceSql);
+    } else {
+      String updateBalanceSql = String.format("UPDATE Customers SET SavingsBalance = %d WHERE CustomerID='%s';", newBalanceInPennies, customerID);
+      jdbcTemplate.update(updateBalanceSql);
+    }
   }
 
-  public static void increaseCustomerCashBalance(JdbcTemplate jdbcTemplate, String customerID, int increaseAmtInPennies) {
-    String balanceIncreaseSql = String.format("UPDATE Customers SET Balance = Balance + %d WHERE CustomerID='%s';", increaseAmtInPennies, customerID);
-    jdbcTemplate.update(balanceIncreaseSql);
+  public static void increaseCustomerCashBalance(JdbcTemplate jdbcTemplate, String customerID, int increaseAmtInPennies, String accountType) {
+    if (accountType.equals("checking")) {
+      String balanceIncreaseSql = String.format("UPDATE Customers SET CheckingBalance = CheckingBalance + %d WHERE CustomerID='%s';", increaseAmtInPennies, customerID);
+      jdbcTemplate.update(balanceIncreaseSql);
+    } else {
+      String balanceIncreaseSql = String.format("UPDATE Customers SET SavingsBalance = SavingsBalance + %d WHERE CustomerID='%s';", increaseAmtInPennies, customerID);
+      jdbcTemplate.update(balanceIncreaseSql);
+    }
   }
 
   public static void initCustomerCryptoBalance(JdbcTemplate jdbcTemplate, String customerID, String cryptoName) {
@@ -140,9 +204,14 @@ public class TestudoBankRepository {
     jdbcTemplate.update(balanceIncreaseSql, increaseAmt, customerID, cryptoName);
   }
 
-  public static void decreaseCustomerCashBalance(JdbcTemplate jdbcTemplate, String customerID, int decreaseAmtInPennies) {
-    String balanceDecreaseSql = String.format("UPDATE Customers SET Balance = Balance - %d WHERE CustomerID='%s';", decreaseAmtInPennies, customerID);
-    jdbcTemplate.update(balanceDecreaseSql);
+  public static void decreaseCustomerCashBalance(JdbcTemplate jdbcTemplate, String customerID, int decreaseAmtInPennies, String accountType) {
+    if (accountType.equals("checking")) {
+      String balanceDecreaseSql = String.format("UPDATE Customers SET CheckingBalance = CheckingBalance - %d WHERE CustomerID='%s';", decreaseAmtInPennies, customerID);
+      jdbcTemplate.update(balanceDecreaseSql);
+    } else {
+      String balanceDecreaseSql = String.format("UPDATE Customers SET SavingsBalance = SavingsBalance - %d WHERE CustomerID='%s';", decreaseAmtInPennies, customerID);
+      jdbcTemplate.update(balanceDecreaseSql);
+    }
   }
 
   public static void decreaseCustomerCryptoBalance(JdbcTemplate jdbcTemplate, String customerID, String cryptoName, double decreaseAmt) {
