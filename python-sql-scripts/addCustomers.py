@@ -82,9 +82,21 @@ CREATE TABLE SavingsTransactionHistory (
 '''
 cursor.execute(create_savings_transactionhistory_table_sql)
 
+# Make empty Internal Transfer table
+create_internaltransferhistory_table_sql = '''
+CREATE TABLE TransferHistory (
+  TransferFrom varchar(255) CHECK (TransferFrom IN ('checking', 'savings')),
+  TransferTo varchar(255) CHECK (TransferTo IN ('checking', 'savings')),
+  Timestamp DATETIME,
+  Amount int
+);
+'''
+cursor.execute(create_internaltransferhistory_table_sql)
+
 # Make empty Transfer table
 create_transferhistory_table_sql = '''
 CREATE TABLE TransferHistory (
+  CustomerID varchar(255),
   TransferFrom varchar(255),
   TransferTo varchar(255),
   Timestamp DATETIME,

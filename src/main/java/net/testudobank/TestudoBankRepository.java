@@ -219,8 +219,13 @@ public class TestudoBankRepository {
     jdbcTemplate.update(balanceDecreaseSql, decreaseAmt, customerID, cryptoName);
   }
 
-  public static void deleteRowFromOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp) {
-    String deleteRowFromOverdraftLogsSql = String.format("DELETE from OverdraftLogs where CustomerID='%s' AND Timestamp='%s';", customerID, timestamp);
+  public static void deleteRowFromCheckingOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp) {
+    String deleteRowFromOverdraftLogsSql = String.format("DELETE from CheckingOverdraftLogs where CustomerID='%s' AND Timestamp='%s';", customerID, timestamp);
+    jdbcTemplate.update(deleteRowFromOverdraftLogsSql);
+  }
+
+  public static void deleteRowFromSavingsOverdraftLogsTable(JdbcTemplate jdbcTemplate, String customerID, String timestamp) {
+    String deleteRowFromOverdraftLogsSql = String.format("DELETE from SavingsOverdraftLogs where CustomerID='%s' AND Timestamp='%s';", customerID, timestamp);
     jdbcTemplate.update(deleteRowFromOverdraftLogsSql);
   }
 
@@ -228,6 +233,16 @@ public class TestudoBankRepository {
     String transferHistoryToSql = String.format("INSERT INTO TransferHistory VALUES ('%s', '%s', '%s', %d);",
                                                     customerID,
                                                     recipientID,
+                                                    timestamp,
+                                                    transferAmount);
+    jdbcTemplate.update(transferHistoryToSql);
+  }
+
+  public static void insertRowToInternalTransferLogsTable(JdbcTemplate jdbcTemplate, String userID, String accountSent, String accountRecieved, String timestamp, int transferAmount) {
+    String transferHistoryToSql = String.format("INSERT INTO InternalTransferHistory VALUES ('%s', '%s', '%s', '%s', %d);",
+                                                    userID,
+                                                    accountSent,
+                                                    accountRecieved,
                                                     timestamp,
                                                     transferAmount);
     jdbcTemplate.update(transferHistoryToSql);

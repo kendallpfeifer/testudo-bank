@@ -175,7 +175,7 @@ public class MvcController {
    * @param model
    * @return "dispute_form" page
    */
-  @GetMapping("/transfer")
+  @GetMapping("/transfer/{user1AccountType}/{user2AccountType}")
 	public String showTransferForm(Model model) {
     User user = new User();
 		model.addAttribute("user", user);
@@ -624,11 +624,15 @@ public class MvcController {
     // Retrieve correct log based on what transaction user wants to reverse
     Map<String, Object> logToReverse = transactionLogs.get(user.getNumTransactionsAgo() - 1);
 
-    // TODO: implement this for both account types
-
     // Get balance and overdraft balance
     int userBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID, accountType);
-    int userOverdraftBalanceInPennies = TestudoBankRepository.getCustomerCheckingOverdraftBalanceInPennies(jdbcTemplate, userID);
+    int userOverdraftBalanceInPennies;
+
+    if (accountType.equals("checking")) {
+      userOverdraftBalanceInPennies = TestudoBankRepository.getCustomerCheckingOverdraftBalanceInPennies(jdbcTemplate, userID);
+    } else {
+      userOverdraftBalanceInPennies = TestudoBankRepository.getCustomerSavingsOverdraftBalanceInPennies(jdbcTemplate, userID);
+    }
 
     int reversalAmountInPennies = (int) logToReverse.get("Amount");
     double reversalAmount = reversalAmountInPennies / 100.0;
@@ -655,17 +659,26 @@ public class MvcController {
           overdraftLogs = TestudoBankRepository.getSavingsOverdraftLogs(jdbcTemplate, userID, datetimeOfReversedDeposit);
         }
 
-        // TODO: implemenbt this for both accounts
-
         // fetch updated overdraft balance with extra interest rate applied
-        double updatedOverdraftBalanceInPennies = TestudoBankRepository.getCustomerCheckingOverdraftBalanceInPennies(jdbcTemplate, userID);
+        double updatedOverdraftBalanceInPennies;
+        if (accountType.equals("checking")) {
+          updatedOverdraftBalanceInPennies = TestudoBankRepository.getCustomerCheckingOverdraftBalanceInPennies(jdbcTemplate, userID);
+        } else {
+          updatedOverdraftBalanceInPennies = TestudoBankRepository.getCustomerSavingsOverdraftBalanceInPennies(jdbcTemplate, userID);
+        }
+
         // reverse extra application of interest rate since customer was already in overdraft
         int newOverdraftBalanceInPennies = (int) (updatedOverdraftBalanceInPennies / 1.02);
 
         if (overdraftLogs.size() != 0) {
           // remove extra entry from overdraft logs
-          TestudoBankRepository.deleteRowFromOverdraftLogsTable(jdbcTemplate, userID, datetimeOfReversedDeposit);
-          TestudoBankRepository.setCustomerCheckingOverdraftBalance(jdbcTemplate, userID, newOverdraftBalanceInPennies);
+          if (accountType.equals("checking")) {
+            TestudoBankRepository.deleteRowFromCheckingOverdraftLogsTable(jdbcTemplate, userID, datetimeOfReversedDeposit);
+            TestudoBankRepository.setCustomerCheckingOverdraftBalance(jdbcTemplate, userID, newOverdraftBalanceInPennies);
+          } else {
+            TestudoBankRepository.deleteRowFromSavingsOverdraftLogsTable(jdbcTemplate, userID, datetimeOfReversedDeposit);
+            TestudoBankRepository.setCustomerSavingsOverdraftBalance(jdbcTemplate, userID, newOverdraftBalanceInPennies);
+          }
         }
       } 
     } else { // Case when reversing a withdraw, deposit the money instead
@@ -698,8 +711,8 @@ public class MvcController {
    * @param user
    * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
    */
-  @PostMapping("/transfer/{accountType}")
-  public String submitTransfer(@PathVariable("accountType") String accountType, @ModelAttribute("user") User sender) {
+  @PostMapping("/transfer/{user1AccountType}/{user2AccountType}")
+  public String submitTransfer(@PathVariable("user1AccountType") String user1AccountType, @PathVariable("user1AccountType") String user2AccountType, @ModelAttribute("user") User sender) {
 
     // checks to see the customer you are transfering to exists
     if (!TestudoBankRepository.doesCustomerExist(jdbcTemplate, sender.getTransferRecipientID())){
@@ -752,10 +765,12 @@ public class MvcController {
 
     // withdraw transfer amount from sender and deposit into recipient's account
     sender.setAmountToWithdraw(transferAmount);
-    submitWithdraw(accountType, sender);
+    submitWithdraw(user1AccountType, sender);
 
     recipient.setAmountToDeposit(transferAmount);
-    submitDeposit(accountType, recipient);
+    submitDeposit(user2AccountType, recipient);
+
+    
 
     // Inserting transfer into transfer history for both customers
     TestudoBankRepository.insertRowToTransferLogsTable(jdbcTemplate, senderUserID, recipientUserID, currentTime, transferAmountInPennies);
@@ -763,6 +778,137 @@ public class MvcController {
 
     return "account_info";
   }
+
+  /**
+   * HTML POST request handler for the Checking Transfer Form page.
+   * 
+   * The same username+password handling from the login page is used.
+   * 
+   * If the password attempt is correct, the users transfer successfully goes through
+   * if it is a valid transfer.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * Checking transfer function is implemented by re-using deposit and withdraw handlers to 
+   * facilitate a transfer from a single user's checking to savings account. 
+   * 
+   * @param user
+   * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/checkingTransfer")
+  public String submitCheckingTransfer(@ModelAttribute("user") User user) {
+
+    String userID = user.getUsername();
+    String passwordAttempt = user.getPassword();
+    String password = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    // sets isCheckingTransfer to true for the user
+    user.setCheckingTransfer(true);
+
+    /// Invalid Input/State Handling ///
+
+    // unsuccessful login
+    if (passwordAttempt.equals(password) == false) {
+      return "welcome";
+    }
+
+    // case where customer already has too many reversals
+    int numOfReversals = TestudoBankRepository.getCustomerNumberOfReversals(jdbcTemplate, userID);
+    if (numOfReversals >= MAX_DISPUTES) {
+      return "welcome";
+    }
+
+    // initialize variables for transfer amount
+    double transferAmount = user.getAmountToTransfer();
+    int transferAmountInPennies = convertDollarsToPennies(transferAmount);
+
+    // negative transfer amount is not allowed
+    if (transferAmount < 0) {
+      return "welcome";
+    } 
+  
+    String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date()); // use same timestamp for all logs created by this transfer
+
+    // withdraw transfer amount from sender and deposit into recipient's account
+    user.setAmountToWithdraw(transferAmount);
+    submitWithdraw("checking", user);
+
+    user.setAmountToDeposit(transferAmount);
+    submitDeposit("savings", user);
+
+    // Inserting transfer into transfer history for both customers
+
+    TestudoBankRepository.insertRowToInternalTransferLogsTable(jdbcTemplate, userID, "checking", "savings", currentTime, transferAmountInPennies);
+    updateAccountInfo(user);
+
+    return "account_info";
+  }
+
+  /**
+   * HTML POST request handler for the Savings Transfer Form page.
+   * 
+   * The same username+password handling from the login page is used.
+   * 
+   * If the password attempt is correct, the users transfer successfully goes through
+   * if it is a valid transfer.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * Checking transfer function is implemented by re-using deposit and withdraw handlers to 
+   * facilitate a transfer from a single user's savings to checking account. 
+   * 
+   * @param user
+   * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/savingsTransfer")
+  public String submitSavingsTransfer(@ModelAttribute("user") User user) {
+
+    String userID = user.getUsername();
+    String passwordAttempt = user.getPassword();
+    String password = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    // sets isSavingsTransfer to true for the user
+    user.setSavingsTransfer(true);
+
+    /// Invalid Input/State Handling ///
+
+    // unsuccessful login
+    if (passwordAttempt.equals(password) == false) {
+      return "welcome";
+    }
+
+    // case where customer already has too many reversals
+    int numOfReversals = TestudoBankRepository.getCustomerNumberOfReversals(jdbcTemplate, userID);
+    if (numOfReversals >= MAX_DISPUTES) {
+      return "welcome";
+    }
+
+    // initialize variables for transfer amount
+    double transferAmount = user.getAmountToTransfer();
+    int transferAmountInPennies = convertDollarsToPennies(transferAmount);
+
+    // negative transfer amount is not allowed
+    if (transferAmount < 0) {
+      return "welcome";
+    } 
+  
+    String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date()); // use same timestamp for all logs created by this transfer
+
+    // withdraw transfer amount from sender and deposit into recipient's account
+    user.setAmountToWithdraw(transferAmount);
+    submitWithdraw("savings", user);
+
+    user.setAmountToDeposit(transferAmount);
+    submitDeposit("checking", user);
+
+    // Inserting transfer into transfer history for both customers
+
+    TestudoBankRepository.insertRowToInternalTransferLogsTable(jdbcTemplate, userID, "savings", "checking", currentTime, transferAmountInPennies);
+    updateAccountInfo(user);
+
+    return "account_info";
+  }
+  
 
   /**
    * HTML POST request handler for the Buy Crypto Form page.

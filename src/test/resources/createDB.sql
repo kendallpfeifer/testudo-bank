@@ -52,6 +52,14 @@ CREATE TABLE TransferHistory (
   Amount int
 );
 
+CREATE TABLE InternalTransferHistory (
+  CustomerID varchar(255),
+  TransferFrom varchar(255) CHECK (TransferFrom IN ('checking', 'savings')),
+  TransferTo varchar(255) CHECK (TransferTo IN ('checking', 'savings')),
+  Timestamp DATETIME,
+  Amount int
+);
+
 CREATE TABLE CryptoHoldings (
   CustomerID varchar(255),
   CryptoName varchar(255),
