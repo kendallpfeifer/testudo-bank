@@ -24,16 +24,28 @@ public class User {
   private String lastName;
 
   @Setter  @Getter @PositiveOrZero @ToString.Include
-	private double balance;
+	private double checkingBalance;
+
+  @Setter  @Getter @PositiveOrZero @ToString.Include
+	private double savingsBalance;
 
   @Setter @Getter @PositiveOrZero
-	private double overDraftBalance;
+	private double checkingOverDraftBalance;
+
+  @Setter @Getter @PositiveOrZero
+	private double savingsOverDraftBalance;
 
   @Setter @Getter
-	private String logs;
+	private String checkingLogs;
 
   @Setter @Getter
-  private String transactionHist;
+	private String savingsLogs;
+
+  @Setter @Getter
+  private String checkingTransactionHist;
+
+  @Setter @Getter
+  private String savingsTransactionHist;
 
   //// Dispute Fields ////
 
@@ -59,10 +71,25 @@ public class User {
   private String transferRecipientID;
 
   @Setter @Getter
+  private String transferSenderAccountType;
+
+  @Setter @Getter
+  private String transferRecipientAccountType;
+
+  @Setter @Getter
   private boolean isTransfer;
 
   @Setter @Getter
+  private boolean isCheckingTransfer;
+
+  @Setter @Getter
+  private boolean isSavingsTransfer;
+
+  @Setter @Getter
   private String transferHist;
+
+  @Setter @Getter
+  private String internalTransferHist;
 
   //// Crypto Fields ////
 

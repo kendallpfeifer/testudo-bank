@@ -2,8 +2,10 @@ CREATE TABLE Customers (
   CustomerID varchar(255),
   FirstName varchar(255),
   LastName varchar(255),
-  Balance int,
-  OverdraftBalance int,
+  CheckingBalance int,
+  SavingsBalance int,
+  CheckingOverdraftBalance int,
+  SavingsOverdraftBalance int,
   NumFraudReversals int,
   NumDepositsForInterest int
 );
@@ -13,7 +15,7 @@ CREATE TABLE Passwords (
   Password varchar(255)
 );
 
-CREATE TABLE OverdraftLogs (
+CREATE TABLE CheckingOverdraftLogs (
   CustomerID varchar(255),
   Timestamp DATETIME,
   DepositAmt int,
@@ -21,16 +23,41 @@ CREATE TABLE OverdraftLogs (
   NewOverBalance int
 );
 
-CREATE TABLE TransactionHistory (
+CREATE TABLE SavingsOverdraftLogs (
   CustomerID varchar(255),
   Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'TransferSend', 'TransferRecieve', 'CryptoBuy', 'CryptoSell')),
+  DepositAmt int,
+  OldOverBalance int,
+  NewOverBalance int
+);
+
+CREATE TABLE CheckingTransactionHistory (
+  CustomerID varchar(255),
+  Timestamp DATETIME,
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'CheckingTransferSend', 'SavingsTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
+  Amount int
+);
+
+CREATE TABLE SavingsTransactionHistory (
+  CustomerID varchar(255),
+  Timestamp DATETIME,
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'SavingsTransferSend', 'CheckingTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
   Amount int
 );
 
 CREATE TABLE TransferHistory (
   TransferFrom varchar(255),
   TransferTo varchar(255),
+  SenderAccountType varchar(255) CHECK (SenderAccountType IN ('checking', 'savings')),
+  RecipientAccountType varchar(255) CHECK (RecipientAccountType IN ('checking', 'savings')),
+  Timestamp DATETIME,
+  Amount int
+);
+
+CREATE TABLE InternalTransferHistory (
+  CustomerID varchar(255),
+  TransferFrom varchar(255) CHECK (TransferFrom IN ('checking', 'savings')),
+  TransferTo varchar(255) CHECK (TransferTo IN ('checking', 'savings')),
   Timestamp DATETIME,
   Amount int
 );
