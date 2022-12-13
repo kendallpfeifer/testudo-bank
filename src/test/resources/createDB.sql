@@ -34,20 +34,22 @@ CREATE TABLE SavingsOverdraftLogs (
 CREATE TABLE CheckingTransactionHistory (
   CustomerID varchar(255),
   Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'CheckingTransferSend', 'CheckingTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'CheckingTransferSend', 'SavingsTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
   Amount int
 );
 
 CREATE TABLE SavingsTransactionHistory (
   CustomerID varchar(255),
   Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'SavingsTransferSend', 'SavingsTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'SavingsTransferSend', 'CheckingTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
   Amount int
 );
 
 CREATE TABLE TransferHistory (
   TransferFrom varchar(255),
   TransferTo varchar(255),
+  SenderAccountType varchar(255) CHECK (SenderAccountType IN ('checking', 'savings')),
+  RecipientAccountType varchar(255) CHECK (RecipientAccountType IN ('checking', 'savings')),
   Timestamp DATETIME,
   Amount int
 );

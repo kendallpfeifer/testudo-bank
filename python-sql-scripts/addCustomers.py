@@ -65,7 +65,7 @@ create_checking_transactionhistory_table_sql = '''
 CREATE TABLE CheckingTransactionHistory (
   CustomerID varchar(255),
   Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'CheckingTransferSend', 'CheckingTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'CheckingTransferSend', 'SavingsTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
   Amount int
 );
 '''
@@ -76,7 +76,7 @@ create_savings_transactionhistory_table_sql = '''
 CREATE TABLE SavingsTransactionHistory (
   CustomerID varchar(255),
   Timestamp DATETIME,
-  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'SavingsTransferSend', 'SavingsTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
+  Action varchar(255) CHECK (Action IN ('Deposit', 'Withdraw', 'SavingsTransferSend', 'CheckingTransferReceive', 'TransferSend', 'TransferReceive', 'CryptoBuy', 'CryptoSell')),
   Amount int
 );
 '''
@@ -84,7 +84,8 @@ cursor.execute(create_savings_transactionhistory_table_sql)
 
 # Make empty Internal Transfer table
 create_internaltransferhistory_table_sql = '''
-CREATE TABLE TransferHistory (
+CREATE TABLE InternalTransferHistory (
+  CustomerID varchar(255),
   TransferFrom varchar(255) CHECK (TransferFrom IN ('checking', 'savings')),
   TransferTo varchar(255) CHECK (TransferTo IN ('checking', 'savings')),
   Timestamp DATETIME,
@@ -96,9 +97,10 @@ cursor.execute(create_internaltransferhistory_table_sql)
 # Make empty Transfer table
 create_transferhistory_table_sql = '''
 CREATE TABLE TransferHistory (
-  CustomerID varchar(255),
   TransferFrom varchar(255),
   TransferTo varchar(255),
+  SenderAccountType varchar(255) CHECK (SenderAccountType IN ('checking', 'savings')),
+  RecipientAccountType varchar(255) CHECK (RecipientAccountType IN ('checking', 'savings')),
   Timestamp DATETIME,
   Amount int
 );
@@ -157,20 +159,23 @@ for i in range(num_customers_to_add):
     # generate random name, balance, and password
     customer_first_name = names.get_first_name()
     customer_last_name = names.get_last_name()
-    customer_balance = random.randint(100, 10000) * 100 # multiply by 100 to have a penny value of 0
+    customer_checking_balance = random.randint(100, 10000) * 100 # multiply by 100 to have a penny value of 0
+    customer_savings_balance = random.randint(100, 10000) * 100 # multiply by 100 to have a penny value of 0
     customer_password = ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k = 9))
     
-    # add random customer ID, name, and balance to Customers table.
+    # add random customer ID, name, and balances to Customers table.
     # all customers start with Overdraft balance of 0
     # all customers start with a NumFraudReversals of 0
     # both the balance and overdraftbalance columns represent the total dollar amount as pennies instead of dollars.
     insert_customer_sql = '''
     INSERT INTO Customers
-    VALUES  ({0},{1},{2},{3},{4},{5}, {6});
+    VALUES  ({0},{1},{2},{3},{4},{5},{6},{7},{8});
     '''.format("'" + customer_id + "'",
                 "'" + customer_first_name + "'",
                 "'" + customer_last_name + "'",
-                customer_balance,
+                customer_checking_balance,
+                customer_savings_balance,
+                0,
                 0,
                 0,
                 0)

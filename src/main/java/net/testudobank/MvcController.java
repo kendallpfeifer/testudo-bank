@@ -92,6 +92,70 @@ public class MvcController {
 		return "login_form";
 	}
 
+    /**
+   * HTML GET request handler that serves the "checking_account_login_form" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's login form input.
+   * 
+   * @param model
+   * @return "login_form" page
+   */
+  @GetMapping("/checking_login")
+	public String showCheckingLoginForm(Model model) {
+		User user = new User();
+    model.addAttribute("user", user);
+
+		return "checking_account_login_form";
+	}
+
+  /**
+   * HTML GET request handler that serves the "savings_account_login_form" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's login form input.
+   * 
+   * @param model
+   * @return "login_form" page
+   */
+  @GetMapping("/savings_login")
+	public String showSavingsLoginForm(Model model) {
+		User user = new User();
+    model.addAttribute("user", user);
+
+		return "savings_account_login_form";
+	}
+
+  /**
+   * HTML GET request handler that serves the "checking_account_info" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's checking account login form input.
+   * 
+   * @param model
+   * @return "login_form" page
+   */
+  @GetMapping("/checking_account_info")
+	public String showCheckingAccountInfo(Model model) {
+		User user = new User();
+    model.addAttribute("user", user);
+
+		return "checking_account_info";
+	}
+
+  /**
+   * HTML GET request handler that serves the "savings_account_info" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's savings account login form input.
+   * 
+   * @param model
+   * @return "login_form" page
+   */
+  @GetMapping("/savings_account_info")
+	public String showSavingsAccountInfo(Model model) {
+		User user = new User();
+    model.addAttribute("user", user);
+
+		return "savings_account_info";
+	}
+
   /**
    * HTML GET request handler that serves the "deposit_form" page to the user.
    * An empty `User` object is also added to the Model as an Attribute to store
@@ -104,7 +168,11 @@ public class MvcController {
 	public String showDepositForm(@PathVariable("accountType") String accountType, Model model) {
     User user = new User();
 		model.addAttribute("user", user);
-		return "deposit_form";
+    if (accountType.equals("checking")) {
+      return "checking_deposit_form";
+    } else {
+      return "savings_deposit_form";
+    }
 	}
 
   /**
@@ -119,7 +187,12 @@ public class MvcController {
 	public String showWithdrawForm(@PathVariable("accountType") String accountType, Model model) {
     User user = new User();
 		model.addAttribute("user", user);
-		return "withdraw_form";
+
+    if (accountType.equals("checking")) {
+      return "checking_withdraw_form";
+    } else {
+      return "savings_withdraw_form";
+    }
 	}
 
   /**
@@ -130,11 +203,15 @@ public class MvcController {
    * @param model
    * @return "dispute_form" page
    */
-  @GetMapping("/dispute")
-	public String showDisputeForm(Model model) {
+  @GetMapping("/dispute/{accountType}")
+	public String showDisputeForm(@PathVariable("accountType") String accountType, Model model) {
     User user = new User();
 		model.addAttribute("user", user);
-		return "dispute_form";
+    if (accountType.equals("checking")) {
+      return "checking_dispute_form";
+    } else {
+      return "savings_dispute_form";
+    }
 	}
 
   /**
@@ -145,11 +222,11 @@ public class MvcController {
    * @param model
    * @return "dispute_form" page
    */
-  @GetMapping("/checkingtransfer")
+  @GetMapping("/checking_transfer")
 	public String showCheckingTransferForm(Model model) {
     User user = new User();
 		model.addAttribute("user", user);
-		return "checking_transfer_form";
+		return "internal_checking_transfer_form";
 	}
 
   /**
@@ -158,13 +235,13 @@ public class MvcController {
    * the user's savings transfer form input.
    * 
    * @param model
-   * @return "dispute_form" page
+   * @return "savings_transfer_form" page
    */
-  @GetMapping("/savingstransfer")
+  @GetMapping("/savings_transfer")
 	public String showSavingsTransferForm(Model model) {
     User user = new User();
 		model.addAttribute("user", user);
-		return "savings_transfer_form";
+		return "internal_savings_transfer_form";
 	}
 
   /**
@@ -175,7 +252,7 @@ public class MvcController {
    * @param model
    * @return "dispute_form" page
    */
-  @GetMapping("/transfer/{user1AccountType}/{user2AccountType}")
+  @GetMapping("/transfer")
 	public String showTransferForm(Model model) {
     User user = new User();
 		model.addAttribute("user", user);
@@ -255,6 +332,12 @@ public class MvcController {
       transferHistoryOutput += transferLog + HTML_LINE_BREAK;
     }
 
+    List<Map<String,Object>> internalTransferLogs = TestudoBankRepository.getInternalTransferLogs(jdbcTemplate, user.getUsername(), MAX_NUM_TRANSFERS_DISPLAYED);
+    String internalTransferHistoryOutput = HTML_LINE_BREAK;
+    for(Map<String, Object> transferLog : internalTransferLogs){
+      internalTransferHistoryOutput += transferLog + HTML_LINE_BREAK;
+    }
+
     List<Map<String, Object>> cryptoLogs = TestudoBankRepository.getCryptoLogs(jdbcTemplate, user.getUsername());
     StringBuilder cryptoHistoryOutput = new StringBuilder(HTML_LINE_BREAK);
     for (Map<String, Object> cryptoLog : cryptoLogs) {
@@ -285,6 +368,9 @@ public class MvcController {
     user.setCheckingTransactionHist(checkingTransactionHistoryOutput);
     user.setSavingsTransactionHist(savingsTransactionHistoryOutput);
     user.setTransferHist(transferHistoryOutput);
+    user.setInternalTransferHist(internalTransferHistoryOutput);
+    user.setCheckingTransfer(false);
+    user.setSavingsTransfer(false);
     user.setCryptoHist(cryptoHistoryOutput.toString());
     user.setEthBalance(TestudoBankRepository.getCustomerCryptoBalance(jdbcTemplate, user.getUsername(), "ETH").orElse(0.0));
     user.setSolBalance(TestudoBankRepository.getCustomerCryptoBalance(jdbcTemplate, user.getUsername(), "SOL").orElse(0.0));
@@ -342,6 +428,116 @@ public class MvcController {
     }
 	}
 
+    /**
+   * HTML POST request handler that uses user input from Login Form page to determine 
+   * login success or failure.
+   * 
+   * Queries 'passwords' table in MySQL DB for the correct password associated with the
+   * username ID given by the user. Compares the user's password attempt with the correct
+   * password.
+   * 
+   * If the password attempt is correct, the "checking_account_info" page is served to the customer
+   * with all account details retrieved from the MySQL DB.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * @param user
+   * @return "checking_account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/checking_login")
+	public String submitCheckingLoginForm(@ModelAttribute("user") User user) {
+    // Print user's existing fields for debugging
+		System.out.println(user);
+
+    String userID = user.getUsername();
+    String userPasswordAttempt = user.getPassword();
+
+    // Retrieve correct password for this customer.
+    String userPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    if (userPasswordAttempt.equals(userPassword)) {
+      updateAccountInfo(user);
+
+      return "checking_account_info";
+    } else {
+      return "welcome";
+    }
+	}
+
+  /**
+   * HTML POST request handler that uses user input from Login Form page to determine 
+   * login success or failure.
+   * 
+   * Queries 'passwords' table in MySQL DB for the correct password associated with the
+   * username ID given by the user. Compares the user's password attempt with the correct
+   * password.
+   * 
+   * If the password attempt is correct, the "savings_account_info" page is served to the customer
+   * with all account details retrieved from the MySQL DB.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * @param user
+   * @return "savings_account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/savings_login")
+	public String submitSavingsLoginForm(@ModelAttribute("user") User user) {
+    // Print user's existing fields for debugging
+		System.out.println(user);
+
+    String userID = user.getUsername();
+    String userPasswordAttempt = user.getPassword();
+
+    // Retrieve correct password for this customer.
+    String userPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    if (userPasswordAttempt.equals(userPassword)) {
+      updateAccountInfo(user);
+
+      return "savings_account_info";
+    } else {
+      return "welcome";
+    }
+	}
+
+    /**
+   * HTML POST request handler that uses user input from Login Form page to determine 
+   * login success or failure for the checking account.
+   * 
+   * Queries 'passwords' table in MySQL DB for the correct password associated with the
+   * username ID given by the user. Compares the user's password attempt with the correct
+   * password.
+   * 
+   * If the password attempt is correct, the "checking_account_info" page is served to the customer
+   * with all account details retrieved from the MySQL DB.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * @param user
+   * @return "checking_account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/checking_account_info")
+	public String submitCheckingAccountInfo(@ModelAttribute("user") User user) {
+    // Print user's existing fields for debugging
+		System.out.println(user);
+
+    String userID = user.getUsername();
+    String userPasswordAttempt = user.getPassword();
+
+    System.out.println("Password is " + userPasswordAttempt);
+
+    // Retrieve correct password for this customer.
+    String userPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    if (userPasswordAttempt.equals(userPassword)) {
+      updateAccountInfo(user);
+
+      return "checking_account_info";
+    } else {
+      return "welcome";
+    }
+	}
+
   /**
    * HTML POST request handler for the Deposit Form page.
    * 
@@ -379,12 +575,9 @@ public class MvcController {
       return "welcome";
     }
     
-    // TODO: deposit with overdraft for checkings/savings
-
     //// Complete Deposit Transaction ////
     int userDepositAmtInPennies = convertDollarsToPennies(userDepositAmt); // dollar amounts stored as pennies to avoid floating point errors
     String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date()); // use same timestamp for all logs created by this deposit
-
     if (accountType.equals("checking")) {
       int userOverdraftBalanceInPennies = TestudoBankRepository.getCustomerCheckingOverdraftBalanceInPennies(jdbcTemplate, userID);
       if (userOverdraftBalanceInPennies > 0) { // deposit will pay off overdraft first
@@ -431,7 +624,10 @@ public class MvcController {
       }
     } else if (user.isCryptoTransaction()) {
       TestudoBankRepository.insertRowToCheckingTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_CRYPTO_SELL_ACTION, userDepositAmtInPennies);
-    // TODO: add transfers here
+    } else if (user.isCheckingTransfer()) {
+      TestudoBankRepository.insertRowToSavingsTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_CHECKING_TRANSFER_RECEIVE_ACTION, userDepositAmtInPennies);
+    } else if (user.isSavingsTransfer()) {
+      TestudoBankRepository.insertRowToCheckingTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_SAVINGS_TRANSFER_RECEIVE_ACTION, userDepositAmtInPennies);
     } else {
       // Adds deposit to transaction history
       if (accountType.equals("checking")) {
@@ -487,7 +683,6 @@ public class MvcController {
       return "welcome";
     }
 
-    // TODO: Fix overdraft for both accounts
     //// Complete Withdraw Transaction ////
     int userWithdrawAmtInPennies = convertDollarsToPennies(userWithdrawAmt); // dollar amounts stored as pennies to avoid floating point errors
     String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date()); // use same timestamp for all logs created by this deposit
@@ -552,10 +747,9 @@ public class MvcController {
     } else if (user.isCryptoTransaction()) {
       TestudoBankRepository.insertRowToCheckingTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_CRYPTO_BUY_ACTION, userWithdrawAmtInPennies);
     } else if (user.isCheckingTransfer()) {
-      //TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_CHECKING_TRANSFER_SEND_ACTION, userWithdrawAmtInPennies, accountType);
-      //TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_SAVINGS_TRANSFER_RECEIVE_ACTION, userWithdrawAmtInPennies, accountType);
+      TestudoBankRepository.insertRowToCheckingTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_CHECKING_TRANSFER_SEND_ACTION, userWithdrawAmtInPennies);
     } else if (user.isSavingsTransfer()) {
-
+      TestudoBankRepository.insertRowToSavingsTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_SAVINGS_TRANSFER_SEND_ACTION, userWithdrawAmtInPennies);
     } else {
       // Adds withdraw to transaction history
       if (accountType.equals("checking")) {
@@ -711,8 +905,8 @@ public class MvcController {
    * @param user
    * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
    */
-  @PostMapping("/transfer/{user1AccountType}/{user2AccountType}")
-  public String submitTransfer(@PathVariable("user1AccountType") String user1AccountType, @PathVariable("user1AccountType") String user2AccountType, @ModelAttribute("user") User sender) {
+  @PostMapping("/transfer")
+  public String submitTransfer(@ModelAttribute("user") User sender) {
 
     // checks to see the customer you are transfering to exists
     if (!TestudoBankRepository.doesCustomerExist(jdbcTemplate, sender.getTransferRecipientID())){
@@ -722,6 +916,7 @@ public class MvcController {
     String senderUserID = sender.getUsername();
     String senderPasswordAttempt = sender.getPassword();
     String senderPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, senderUserID);
+    String user1AccountType = sender.getTransferSenderAccountType();
 
     // creates new user for recipient
     User recipient = new User();
@@ -729,6 +924,7 @@ public class MvcController {
     String recipientPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, recipientUserID);
     recipient.setUsername(recipientUserID);
     recipient.setPassword(recipientPassword);
+    String user2AccountType = sender.getTransferRecipientAccountType();
 
     // sets isTransfer to true for sender and recipient
     sender.setTransfer(true);
@@ -771,9 +967,8 @@ public class MvcController {
     submitDeposit(user2AccountType, recipient);
 
     
-
     // Inserting transfer into transfer history for both customers
-    TestudoBankRepository.insertRowToTransferLogsTable(jdbcTemplate, senderUserID, recipientUserID, currentTime, transferAmountInPennies);
+    TestudoBankRepository.insertRowToTransferLogsTable(jdbcTemplate, senderUserID, recipientUserID, user1AccountType, user1AccountType, currentTime, transferAmountInPennies);
     updateAccountInfo(sender);
 
     return "account_info";
@@ -795,7 +990,7 @@ public class MvcController {
    * @param user
    * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
    */
-  @PostMapping("/checkingTransfer")
+  @PostMapping("/checking_transfer")
   public String submitCheckingTransfer(@ModelAttribute("user") User user) {
 
     String userID = user.getUsername();
@@ -860,7 +1055,7 @@ public class MvcController {
    * @param user
    * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
    */
-  @PostMapping("/savingsTransfer")
+  @PostMapping("/savings_transfer")
   public String submitSavingsTransfer(@ModelAttribute("user") User user) {
 
     String userID = user.getUsername();

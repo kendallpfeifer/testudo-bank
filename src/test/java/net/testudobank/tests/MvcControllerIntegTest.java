@@ -2000,9 +2000,11 @@ public class MvcControllerIntegTest {
     CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_CHECKING);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_SAVINGS);
     
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_CHECKING, ACCOUNT_TYPE_SAVINGS, CUSTOMER1);
+    String returnedPage = controller.submitTransfer( CUSTOMER1);
     
     //Fetch customer1 & customer2's data from DB
     List<Map<String, Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2053,9 +2055,11 @@ public class MvcControllerIntegTest {
     CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_SAVINGS);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_CHECKING);
     
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_SAVINGS, ACCOUNT_TYPE_CHECKING, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
     
     //Fetch customer1 & customer2's data from DB
     List<Map<String, Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2108,9 +2112,11 @@ public class MvcControllerIntegTest {
     CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_SAVINGS);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_CHECKING);
     
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_SAVINGS, ACCOUNT_TYPE_CHECKING, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
     
     //Fetch customer1 & customer2's data from DB
     List<Map<String, Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2167,9 +2173,11 @@ public class MvcControllerIntegTest {
     CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_CHECKING);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_CHECKING);
     
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_CHECKING, ACCOUNT_TYPE_CHECKING, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
     
     //Fetch customer1 & customer2's data from DB
     List<Map<String, Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2220,9 +2228,11 @@ public class MvcControllerIntegTest {
     CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_SAVINGS);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_SAVINGS);
     
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_SAVINGS, ACCOUNT_TYPE_SAVINGS, CUSTOMER1);
+    String returnedPage = controller.submitTransfer( CUSTOMER1);
     
     //Fetch customer1 & customer2's data from DB
     List<Map<String, Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2276,9 +2286,11 @@ public class MvcControllerIntegTest {
 
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_SAVINGS);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_SAVINGS);
 
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_SAVINGS, ACCOUNT_TYPE_SAVINGS, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
 
     //fetch customer1 & customer2's data from DB
     List<Map<String,Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2332,9 +2344,11 @@ public class MvcControllerIntegTest {
 
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_CHECKING);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_CHECKING);
 
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_CHECKING, ACCOUNT_TYPE_CHECKING, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
 
     //fetch customer1 & customer2's data from DB
     List<Map<String,Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2390,9 +2404,11 @@ public void testTransferPaysOverdraftAndDepositsRemainderChecking() throws SQLEx
 
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_CHECKING);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_CHECKING);
 
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_CHECKING, ACCOUNT_TYPE_CHECKING, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
 
     //fetch customer1 & customer2's data from DB
     List<Map<String,Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));
@@ -2452,9 +2468,11 @@ public void testTransferPaysOverdraftAndDepositsRemainderSavings() throws SQLExc
 
     CUSTOMER1.setTransferRecipientID(CUSTOMER2_ID);
     CUSTOMER1.setAmountToTransfer(TRANSFER_AMOUNT);
+    CUSTOMER1.setTransferSenderAccountType(ACCOUNT_TYPE_SAVINGS);
+    CUSTOMER1.setTransferRecipientAccountType(ACCOUNT_TYPE_SAVINGS);
 
     //Send the transfer request.
-    String returnedPage = controller.submitTransfer(ACCOUNT_TYPE_SAVINGS, ACCOUNT_TYPE_SAVINGS, CUSTOMER1);
+    String returnedPage = controller.submitTransfer(CUSTOMER1);
 
     //fetch customer1 & customer2's data from DB
     List<Map<String,Object>> customer1SqlResult = jdbcTemplate.queryForList(String.format("SELECT * FROM Customers WHERE CustomerID='%s';", CUSTOMER1_ID));

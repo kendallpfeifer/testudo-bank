@@ -75,6 +75,12 @@ public class TestudoBankRepository {
     return transferLogs;
   }
 
+  public static List<Map<String,Object>> getInternalTransferLogs(JdbcTemplate jdbcTemplate, String customerID, int numTransfersToFetch) {
+    String getTransferHistorySql = String.format("Select * from InternalTransferHistory WHERE CustomerID='%s' ORDER BY Timestamp DESC LIMIT %d;", customerID, numTransfersToFetch);
+    List<Map<String,Object>> transferLogs = jdbcTemplate.queryForList(getTransferHistorySql);
+    return transferLogs;
+  }
+
   public static List<Map<String,Object>> getCheckingOverdraftLogs(JdbcTemplate jdbcTemplate, String customerID){
     String getOverDraftLogsSql = String.format("SELECT * FROM CheckingOverdraftLogs WHERE CustomerID='%s';", customerID);
     List<Map<String,Object>> overdraftLogs = jdbcTemplate.queryForList(getOverDraftLogsSql);
@@ -229,10 +235,12 @@ public class TestudoBankRepository {
     jdbcTemplate.update(deleteRowFromOverdraftLogsSql);
   }
 
-  public static void insertRowToTransferLogsTable(JdbcTemplate jdbcTemplate, String customerID, String recipientID, String timestamp, int transferAmount) {
-    String transferHistoryToSql = String.format("INSERT INTO TransferHistory VALUES ('%s', '%s', '%s', %d);",
+  public static void insertRowToTransferLogsTable(JdbcTemplate jdbcTemplate, String customerID, String recipientID, String senderAccountType, String recipientAccountType, String timestamp, int transferAmount) {
+    String transferHistoryToSql = String.format("INSERT INTO TransferHistory VALUES ('%s', '%s', '%s', '%s', '%s', %d);",
                                                     customerID,
                                                     recipientID,
+                                                    senderAccountType,
+                                                    recipientAccountType,
                                                     timestamp,
                                                     transferAmount);
     jdbcTemplate.update(transferHistoryToSql);

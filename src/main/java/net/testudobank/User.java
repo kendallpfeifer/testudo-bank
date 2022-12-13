@@ -71,6 +71,12 @@ public class User {
   private String transferRecipientID;
 
   @Setter @Getter
+  private String transferSenderAccountType;
+
+  @Setter @Getter
+  private String transferRecipientAccountType;
+
+  @Setter @Getter
   private boolean isTransfer;
 
   @Setter @Getter
@@ -81,6 +87,9 @@ public class User {
 
   @Setter @Getter
   private String transferHist;
+
+  @Setter @Getter
+  private String internalTransferHist;
 
   //// Crypto Fields ////
 
